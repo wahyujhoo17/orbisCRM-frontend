@@ -1,43 +1,38 @@
-# Orbis CRM
+# Orbis CRM - Frontend
 
-![Orbis CRM Dashboard Mockup](frontend/public/img/mockup/mockup_login.png)
+![Orbis CRM Dashboard Mockup](public/img/mockup/mockup_login.png)
 
 Modern CRM (Customer Relationship Management) application.
-This project is structured as a monorepo containing both the frontend and (in the future) the backend services.
-
-## Project Structure
-
-- `/frontend` - React application built with Vite and Tailwind CSS.
-- `/backend` - (To be added) Backend services.
+This repository contains the **Frontend** client for Orbis CRM, built with React, Vite, and Tailwind CSS.
 
 ## Getting Started
 
-### Frontend
-
-1. Navigate to the frontend directory:
-   ```bash
-   cd frontend
-   ```
-2. Install dependencies:
+1. **Install dependencies:**
    ```bash
    npm install
    ```
-3. Start the development server:
+
+2. **Start the development server:**
    ```bash
    npm run dev
    ```
 
-## Technologies Used (Frontend)
+3. **Build for production:**
+   ```bash
+   npm run build
+   ```
 
-- React 18 & Vite
-- Tailwind CSS
-- React Router DOM
-- **Framer Motion & Goey Toast** (for animated toasts)
-- Phosphor Icons / Lucide React
+## Technologies Used
+
+- **React 18 & Vite**: Fast development and building.
+- **Tailwind CSS**: Utility-first CSS framework for rapid UI development.
+- **React Router DOM**: Client-side routing.
+- **Framer Motion & Goey Toast**: For premium, smooth morphing animated toasts.
+- **Lucide React**: Beautiful and consistent iconography.
 
 ## Notifications (Goey Toast)
 
-This project uses [goey-toast](https://github.com/goey-toast) for all notifications to provide a premium, smooth morphing animation.
+This project uses [goey-toast](https://github.com/goey-toast) for all notifications to provide a premium user experience.
 
 **Example Usage:**
 ```jsx
