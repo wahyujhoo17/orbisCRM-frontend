@@ -437,6 +437,28 @@ export default function Leads() {
     }
   };
 
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [leadToEdit, setLeadToEdit] = useState(null);
+
+  const handleEditLeadSubmit = (e) => {
+    e.preventDefault();
+    if (!leadToEdit || !leadToEdit.first_name?.trim() || !leadToEdit.last_name?.trim()) {
+      gooeyToast.error('Please enter first name and last name');
+      return;
+    }
+
+    setLeads(prev => prev.map(l => l.id === leadToEdit.id ? {
+      ...leadToEdit,
+      name: `${leadToEdit.first_name} ${leadToEdit.last_name}`
+    } : l));
+
+    setIsEditModalOpen(false);
+    gooeyToast.success('Lead updated successfully', {
+      description: `${leadToEdit.salutation || ''} ${leadToEdit.first_name} ${leadToEdit.last_name} has been updated.`
+    });
+    setLeadToEdit(null);
+  };
+
   return (
     <div className="flex-1 overflow-y-auto bg-[#fafafa]">
       <div className="p-6 max-w-[1440px] mx-auto space-y-6">
@@ -454,6 +476,10 @@ export default function Leads() {
           searchPlaceholder="Search leads..."
           onRowClick={(row) => navigate(`/leads/${row.id}`)}
           onRowView={(row) => navigate(`/leads/${row.id}`)}
+          onRowEdit={(row) => {
+            setLeadToEdit({ ...row });
+            setIsEditModalOpen(true);
+          }}
           onRowDelete={(row) => {
             setLeadToDelete(row);
             setIsDeleteModalOpen(true);
@@ -648,6 +674,129 @@ export default function Leads() {
             </div>
           </form>
         </Modal>
+
+        {/* Edit Lead Modal */}
+        {leadToEdit && (
+          <Modal 
+            isOpen={isEditModalOpen} 
+            onClose={() => {
+              setIsEditModalOpen(false);
+              setLeadToEdit(null);
+            }} 
+            title="Edit Lead"
+          >
+            <form onSubmit={handleEditLeadSubmit} className="space-y-4 text-xs">
+              <div className="grid grid-cols-3 gap-3">
+                <Select
+                  label="Salutation"
+                  value={leadToEdit.salutation || 'Mr.'}
+                  onChange={(e) => setLeadToEdit({ ...leadToEdit, salutation: e.target.value })}
+                  options={[
+                    { value: 'Mr.', label: 'Mr.' },
+                    { value: 'Ms.', label: 'Ms.' },
+                    { value: 'Dr.', label: 'Dr.' },
+                    { value: 'Mrs.', label: 'Mrs.' }
+                  ]}
+                />
+                <Input
+                  label="First Name *"
+                  value={leadToEdit.first_name || ''}
+                  onChange={(e) => setLeadToEdit({ ...leadToEdit, first_name: e.target.value })}
+                  placeholder="John"
+                  required
+                />
+                <Input
+                  label="Last Name *"
+                  value={leadToEdit.last_name || ''}
+                  onChange={(e) => setLeadToEdit({ ...leadToEdit, last_name: e.target.value })}
+                  placeholder="Doe"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  label="Email Address"
+                  type="email"
+                  value={leadToEdit.email || ''}
+                  onChange={(e) => setLeadToEdit({ ...leadToEdit, email: e.target.value })}
+                  placeholder="john.doe@company.com"
+                />
+                <Input
+                  label="Mobile Phone"
+                  value={leadToEdit.mobile_no || ''}
+                  onChange={(e) => setLeadToEdit({ ...leadToEdit, mobile_no: e.target.value })}
+                  placeholder="+1 (555) 000-0000"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  label="Company Name"
+                  value={leadToEdit.company_name || ''}
+                  onChange={(e) => setLeadToEdit({ ...leadToEdit, company_name: e.target.value })}
+                  placeholder="Acme Corp"
+                />
+                <Select
+                  label="Industry"
+                  value={leadToEdit.industry || 'Healthcare'}
+                  onChange={(e) => setLeadToEdit({ ...leadToEdit, industry: e.target.value })}
+                  options={['Healthcare', 'Retail', 'Finance', 'Manufacturing', 'Logistics', 'Technology']}
+                />
+              </div>
+
+              <div className="pt-2 border-t border-stone-100 space-y-4">
+                <h4 className="text-[11px] font-bold text-stone-400 uppercase tracking-wider">
+                  Pipeline Settings
+                </h4>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <Select
+                    label="Status"
+                    value={leadToEdit.lead_status || 'New'}
+                    onChange={(e) => setLeadToEdit({ ...leadToEdit, lead_status: e.target.value })}
+                    options={['New', 'Contacted', 'Qualified', 'Lost']}
+                  />
+                  <Select
+                    label="Source"
+                    value={leadToEdit.lead_source || 'Website'}
+                    onChange={(e) => setLeadToEdit({ ...leadToEdit, lead_source: e.target.value })}
+                    options={['Website', 'Referral', 'Cold Call', 'Trade Show', 'Webinar']}
+                  />
+                  <Select
+                    label="Territory"
+                    value={leadToEdit.territory || 'North America'}
+                    onChange={(e) => setLeadToEdit({ ...leadToEdit, territory: e.target.value })}
+                    options={['North America', 'Europe', 'APAC', 'LATAM']}
+                  />
+                </div>
+
+                <Select
+                  label="Assigned Agent"
+                  value={leadToEdit.assigned_to || 'Sarah Chen'}
+                  onChange={(e) => setLeadToEdit({ ...leadToEdit, assigned_to: e.target.value })}
+                  options={['Sarah Chen', 'Marcus Thorne', 'James Wilson']}
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-stone-100">
+                <button 
+                  type="button" 
+                  onClick={() => setIsEditModalOpen(false)} 
+                  className="px-4 py-2 border border-stone-200 rounded-lg font-bold text-stone-600 hover:bg-stone-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="px-4 py-2 bg-stone-900 text-white rounded-lg font-bold hover:bg-stone-800 cursor-pointer"
+                >
+                  Update Lead
+                </button>
+              </div>
+            </form>
+          </Modal>
+        )}
 
         <ConfirmModal
           isOpen={isDeleteModalOpen}

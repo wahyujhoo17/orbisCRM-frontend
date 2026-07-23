@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   ArrowUpDown,
   Check,
@@ -18,6 +19,122 @@ import {
   UploadCloud,
   X
 } from 'lucide-react';
+
+function RowActionButton({ row, onRowView, onRowEdit, onRowDelete }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [coords, setCoords] = useState({ top: 0, left: 0, isUpward: false });
+  const buttonRef = useRef(null);
+  const menuRef = useRef(null);
+
+  const updateCoords = () => {
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const spaceBelow = viewportHeight - rect.bottom;
+      const isUpward = spaceBelow < 170 && rect.top > 170;
+
+      setCoords({
+        top: isUpward ? rect.top - 4 : rect.bottom + 4,
+        left: rect.right - 144, // 144px is w-36 menu width
+        isUpward
+      });
+    }
+  };
+
+  const handleToggle = (e) => {
+    e.stopPropagation();
+    if (!isOpen) {
+      updateCoords();
+      setIsOpen(true);
+    } else {
+      setIsOpen(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleScrollOrResize = () => updateCoords();
+    const handleClickOutside = (e) => {
+      if (
+        buttonRef.current && !buttonRef.current.contains(e.target) &&
+        menuRef.current && !menuRef.current.contains(e.target)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScrollOrResize, true);
+    window.addEventListener('resize', handleScrollOrResize);
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+      window.removeEventListener('resize', handleScrollOrResize);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  return (
+    <>
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={handleToggle}
+        className="p-1 text-stone-500 hover:text-stone-900 hover:bg-stone-100 rounded-md transition-colors relative z-20 cursor-pointer"
+      >
+        <MoreHorizontal className="w-4 h-4" />
+      </button>
+
+      {isOpen && typeof document !== 'undefined' && createPortal(
+        <div
+          ref={menuRef}
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            position: 'fixed',
+            left: Math.max(12, coords.left),
+            top: coords.isUpward ? 'auto' : coords.top,
+            bottom: coords.isUpward ? window.innerHeight - coords.top : 'auto',
+            zIndex: 9999
+          }}
+          className="w-36 bg-white border border-stone-200 rounded-xl shadow-xl p-1.5 text-xs font-medium animate-in fade-in zoom-in-95 duration-150"
+        >
+          {onRowView && (
+            <button
+              type="button"
+              onClick={() => { setIsOpen(false); onRowView(row); }}
+              className="w-full text-left px-3 py-2 rounded-md hover:bg-stone-50 text-stone-700 transition-colors font-semibold cursor-pointer"
+            >
+              View Details
+            </button>
+          )}
+          {onRowEdit && (
+            <button
+              type="button"
+              onClick={() => { setIsOpen(false); onRowEdit(row); }}
+              className="w-full text-left px-3 py-2 rounded-md hover:bg-stone-50 text-stone-700 transition-colors font-semibold cursor-pointer"
+            >
+              Edit Record
+            </button>
+          )}
+          {(onRowView || onRowEdit) && onRowDelete && (
+            <div className="h-px bg-stone-100 my-1" />
+          )}
+          {onRowDelete && (
+            <button
+              type="button"
+              onClick={() => { setIsOpen(false); onRowDelete(row); }}
+              className="w-full text-left px-3 py-2 rounded-md hover:bg-rose-50 text-rose-600 transition-colors font-semibold cursor-pointer"
+            >
+              Delete
+            </button>
+          )}
+        </div>,
+        document.body
+      )}
+    </>
+  );
+}
 
 export default function DataTable({
   columns,
@@ -493,21 +610,13 @@ export default function DataTable({
                       </td>
                     ))}
                     <td className="px-4 py-4 align-middle">
-                      <div className="relative flex justify-end">
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); setActiveActionRow(activeActionRow === rowId ? null : rowId); }}
-                          className="p-1 text-stone-500 hover:text-stone-900 hover:bg-stone-100 rounded-md transition-colors relative z-20"
-                        >
-                          <MoreHorizontal className="w-4 h-4" />
-                        </button>
-                        {activeActionRow === rowId && (
-                          <div className="absolute right-0 top-full mt-1 w-36 bg-white border border-stone-200 rounded-xl shadow-lg z-30 p-1.5 text-xs font-medium" onClick={e => e.stopPropagation()}>
-                             <button onClick={() => { setActiveActionRow(null); onRowView && onRowView(row); }} className="w-full text-left px-3 py-2 rounded-md hover:bg-stone-50 text-stone-700 transition-colors">View Details</button>
-                             <button onClick={() => { setActiveActionRow(null); onRowEdit && onRowEdit(row); }} className="w-full text-left px-3 py-2 rounded-md hover:bg-stone-50 text-stone-700 transition-colors">Edit Record</button>
-                             <div className="h-px bg-stone-100 my-1 mx-1"></div>
-                             <button onClick={() => { setActiveActionRow(null); onRowDelete && onRowDelete(row); }} className="w-full text-left px-3 py-2 rounded-md hover:bg-rose-50 text-rose-600 transition-colors">Delete</button>
-                          </div>
-                        )}
+                      <div className="flex justify-end">
+                        <RowActionButton 
+                          row={row} 
+                          onRowView={onRowView} 
+                          onRowEdit={onRowEdit} 
+                          onRowDelete={onRowDelete} 
+                        />
                       </div>
                     </td>
                   </tr>
@@ -539,22 +648,12 @@ export default function DataTable({
                     onClick={() => onRowClick && onRowClick(row)}
                   >
                     <div className="absolute top-5 right-5 z-20">
-                      <div className="relative">
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); setActiveActionRow(activeActionRow === rowId ? null : rowId); }}
-                          className="p-1 text-stone-400 hover:text-stone-900 hover:bg-stone-100 rounded-md transition-colors bg-white/80 backdrop-blur-sm shadow-2xs"
-                        >
-                          <MoreHorizontal className="w-5 h-5" />
-                        </button>
-                        {activeActionRow === rowId && (
-                          <div className="absolute right-0 top-full mt-1 w-36 bg-white border border-stone-200 rounded-xl shadow-lg z-30 p-1.5 text-xs font-medium" onClick={e => e.stopPropagation()}>
-                             <button onClick={() => { setActiveActionRow(null); onRowView && onRowView(row); }} className="w-full text-left px-3 py-2 rounded-md hover:bg-stone-50 text-stone-700 transition-colors">View Details</button>
-                             <button onClick={() => { setActiveActionRow(null); onRowEdit && onRowEdit(row); }} className="w-full text-left px-3 py-2 rounded-md hover:bg-stone-50 text-stone-700 transition-colors">Edit Record</button>
-                             <div className="h-px bg-stone-100 my-1 mx-1"></div>
-                             <button onClick={() => { setActiveActionRow(null); onRowDelete && onRowDelete(row); }} className="w-full text-left px-3 py-2 rounded-md hover:bg-rose-50 text-rose-600 transition-colors">Delete</button>
-                          </div>
-                        )}
-                      </div>
+                      <RowActionButton 
+                        row={row} 
+                        onRowView={onRowView} 
+                        onRowEdit={onRowEdit} 
+                        onRowDelete={onRowDelete} 
+                      />
                     </div>
                     
                     <div className="flex justify-between items-start mb-4 pr-10">
