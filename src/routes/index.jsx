@@ -10,9 +10,11 @@ const Tasks = lazy(() => import('../pages/Tasks'));
 const TaskDetail = lazy(() => import('../pages/TaskDetail'));
 const Contacts = lazy(() => import('../pages/Contacts'));
 const Companies = lazy(() => import('../pages/Companies'));
-const Deals = lazy(() => import('../pages/Deals'));
-const DealsKanban = lazy(() => import('../pages/DealsKanban'));
 const Leads = lazy(() => import('../pages/Leads'));
+const LeadDetail = lazy(() => import('../pages/LeadDetail'));
+const Deals = lazy(() => import('../pages/Deals'));
+const DealDetail = lazy(() => import('../pages/DealDetail'));
+const DealsKanban = lazy(() => import('../pages/DealsKanban'));
 const Products = lazy(() => import('../pages/Products'));
 const Emails = lazy(() => import('../pages/Emails'));
 const Reports = lazy(() => import('../pages/Reports'));
@@ -60,9 +62,11 @@ export default function AppRoutes() {
 
           {/* Leads */}
           <Route path="/leads" element={<Leads />} />
+          <Route path="/leads/:id" element={<LeadDetail />} />
 
           {/* Deals */}
           <Route path="/deals" element={<Deals />} />
+          <Route path="/deals/:id" element={<DealDetail />} />
           <Route path="/deals-kanban" element={<DealsKanban />} />
 
           {/* Products */}

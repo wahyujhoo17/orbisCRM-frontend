@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
-export default function Modal({ isOpen, onClose, title, children, size = 'md', showCloseButton = true }) {
+export default function Modal({ isOpen, onClose, title, children, size = 'lg', showCloseButton = true }) {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -28,9 +28,9 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md', s
 
   const sizeClasses = {
     sm: 'max-w-md',
-    md: 'max-w-lg',
-    lg: 'max-w-2xl',
-    xl: 'max-w-4xl',
+    md: 'max-w-xl',
+    lg: 'max-w-3xl',
+    xl: 'max-w-5xl',
     full: 'max-w-full mx-4'
   };
 

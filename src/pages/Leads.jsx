@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Mail,
   Phone,
@@ -7,7 +8,7 @@ import {
   UserCircle2
 } from 'lucide-react';
 import { DataTable } from '../components/common';
-import { ConfirmModal } from '../components/ui';
+import { ConfirmModal, Modal, Input, Select } from '../components/ui';
 import { gooeyToast } from 'goey-toast';
 
 // Dummy Data mapped from project.md schema
@@ -238,6 +239,7 @@ const sourceStyles = {
 };
 
 export default function Leads() {
+  const navigate = useNavigate();
   const [leads, setLeads] = useState(mockLeads);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [leadToDelete, setLeadToDelete] = useState(null);
@@ -355,6 +357,86 @@ export default function Leads() {
     name: `${lead.first_name} ${lead.last_name} ${lead.email}`
   }));
 
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newLead, setNewLead] = useState({
+    salutation: 'Mr.',
+    first_name: '',
+    last_name: '',
+    email: '',
+    mobile_no: '',
+    company_name: '',
+    lead_status: 'New',
+    lead_source: 'Website',
+    industry: 'Healthcare',
+    territory: 'North America',
+    assigned_to: 'Sarah Chen'
+  });
+
+  const handleAddLeadSubmit = (e) => {
+    e.preventDefault();
+    if (addMode === 'existing' && !selectedContactId) {
+      gooeyToast.error('Please select a contact from the database');
+      return;
+    }
+
+    if (addMode === 'new' && (!newLead.first_name.trim() || !newLead.last_name.trim())) {
+      gooeyToast.error('Please enter first name and last name');
+      return;
+    }
+
+    const created = {
+      id: `LD-${1000 + leads.length + 1}`,
+      ...newLead,
+      name: `${newLead.first_name} ${newLead.last_name}`,
+      created_at: new Date().toISOString().split('T')[0]
+    };
+
+    setLeads([created, ...leads]);
+    setIsAddModalOpen(false);
+    setSelectedContactId('');
+    setNewLead({
+      salutation: 'Mr.',
+      first_name: '',
+      last_name: '',
+      email: '',
+      mobile_no: '',
+      company_name: '',
+      lead_status: 'New',
+      lead_source: 'Website',
+      industry: 'Healthcare',
+      territory: 'North America',
+      assigned_to: 'Sarah Chen'
+    });
+    gooeyToast.success('Lead added successfully', {
+      description: `${created.salutation} ${created.name} has been added to your pipeline.`
+    });
+  };
+
+  const [addMode, setAddMode] = useState('new'); // 'new' or 'existing'
+  const [selectedContactId, setSelectedContactId] = useState('');
+  const mockContactsList = [
+    { id: 'C-1', name: 'Emma Johansson', first_name: 'Emma', last_name: 'Johansson', email: 'emma@nordicsoft.io', mobile_no: '+1 234 567 890', company_name: 'Nordic Soft AB', salutation: 'Ms.' },
+    { id: 'C-2', name: 'Ethan Wilson', first_name: 'Ethan', last_name: 'Wilson', email: 'ethan@travelventures.com', mobile_no: '+1 234 567 891', company_name: 'Travel Ventures', salutation: 'Mr.' },
+    { id: 'C-3', name: 'Isabella Hernandez', first_name: 'Isabella', last_name: 'Hernandez', email: 'isabella@designstudios.net', mobile_no: '+1 234 567 892', company_name: 'Design Studios', salutation: 'Ms.' },
+    { id: 'C-4', name: 'Ronald Richards', first_name: 'Ronald', last_name: 'Richards', email: 'ronald.richards@example.com', mobile_no: '+64 21 890 1234', company_name: 'Richards Corp', salutation: 'Mr.' }
+  ];
+
+  const handleSelectContact = (contactId) => {
+    setSelectedContactId(contactId);
+    const found = mockContactsList.find(c => c.id === contactId);
+    if (found) {
+      setNewLead(prev => ({
+        ...prev,
+        salutation: found.salutation,
+        first_name: found.first_name,
+        last_name: found.last_name,
+        email: found.email,
+        mobile_no: found.mobile_no,
+        company_name: found.company_name
+      }));
+    }
+  };
+
   return (
     <div className="flex-1 overflow-y-auto bg-[#fafafa]">
       <div className="p-6 max-w-[1440px] mx-auto space-y-6">
@@ -368,12 +450,204 @@ export default function Leads() {
           data={leadsData} 
           pageSize={10} 
           primaryActionLabel="Add Lead"
+          onPrimaryAction={() => setIsAddModalOpen(true)}
           searchPlaceholder="Search leads..."
+          onRowClick={(row) => navigate(`/leads/${row.id}`)}
+          onRowView={(row) => navigate(`/leads/${row.id}`)}
           onRowDelete={(row) => {
             setLeadToDelete(row);
             setIsDeleteModalOpen(true);
           }}
         />
+
+        {/* Add Lead Modal */}
+        <Modal 
+          isOpen={isAddModalOpen} 
+          onClose={() => {
+            setIsAddModalOpen(false);
+            setSelectedContactId('');
+          }} 
+          title="Add New Lead"
+        >
+          <form onSubmit={handleAddLeadSubmit} className="space-y-4 text-xs">
+            {/* Tab Mode Selector */}
+            <div className="flex items-center p-1 bg-stone-100 rounded-lg border border-stone-200/60 font-semibold text-xs mb-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setAddMode('new');
+                  setSelectedContactId('');
+                }}
+                className={`flex-1 py-1.5 rounded-md transition-all cursor-pointer ${
+                  addMode === 'new' ? 'bg-white text-stone-900 shadow-2xs font-bold' : 'text-stone-500 hover:text-stone-800'
+                }`}
+              >
+                Create New Prospect
+              </button>
+              <button
+                type="button"
+                onClick={() => setAddMode('existing')}
+                className={`flex-1 py-1.5 rounded-md transition-all cursor-pointer ${
+                  addMode === 'existing' ? 'bg-white text-stone-900 shadow-2xs font-bold' : 'text-stone-500 hover:text-stone-800'
+                }`}
+              >
+                Select Existing Contact
+              </button>
+            </div>
+
+            {addMode === 'existing' ? (
+              <div className="space-y-4">
+                <div className="p-3 bg-stone-50 rounded-xl border border-stone-200/80 space-y-1.5">
+                  <Select
+                    label="Select Contact from Database *"
+                    value={selectedContactId}
+                    onChange={(e) => handleSelectContact(e.target.value)}
+                    placeholder="-- Choose Existing Contact --"
+                    options={mockContactsList.map(c => ({
+                      value: c.id,
+                      label: `${c.name} (${c.company_name}) - ${c.email}`
+                    }))}
+                  />
+                </div>
+
+                {/* Selected Contact Preview Card */}
+                {selectedContactId && (
+                  <div className="p-4 bg-emerald-50/50 border border-emerald-200/80 rounded-xl flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-sm border border-emerald-200">
+                        {newLead.first_name?.[0]}{newLead.last_name?.[0]}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-stone-900 text-xs">
+                          {newLead.salutation} {newLead.first_name} {newLead.last_name}
+                        </h4>
+                        <p className="text-[11px] text-stone-500 font-medium">
+                          {newLead.company_name} • {newLead.email} • {newLead.mobile_no}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700">
+                      Contact Linked
+                    </span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Create New Prospect Personal Details */
+              <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-3">
+                  <Select
+                    label="Salutation"
+                    value={newLead.salutation}
+                    onChange={(e) => setNewLead({ ...newLead, salutation: e.target.value })}
+                    options={[
+                      { value: 'Mr.', label: 'Mr.' },
+                      { value: 'Ms.', label: 'Ms.' },
+                      { value: 'Dr.', label: 'Dr.' },
+                      { value: 'Mrs.', label: 'Mrs.' }
+                    ]}
+                  />
+                  <Input
+                    label="First Name *"
+                    value={newLead.first_name}
+                    onChange={(e) => setNewLead({ ...newLead, first_name: e.target.value })}
+                    placeholder="John"
+                    required
+                  />
+                  <Input
+                    label="Last Name *"
+                    value={newLead.last_name}
+                    onChange={(e) => setNewLead({ ...newLead, last_name: e.target.value })}
+                    placeholder="Doe"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Input
+                    label="Email Address"
+                    type="email"
+                    value={newLead.email}
+                    onChange={(e) => setNewLead({ ...newLead, email: e.target.value })}
+                    placeholder="john.doe@company.com"
+                  />
+                  <Input
+                    label="Mobile Phone"
+                    value={newLead.mobile_no}
+                    onChange={(e) => setNewLead({ ...newLead, mobile_no: e.target.value })}
+                    placeholder="+1 (555) 000-0000"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Input
+                    label="Company Name"
+                    value={newLead.company_name}
+                    onChange={(e) => setNewLead({ ...newLead, company_name: e.target.value })}
+                    placeholder="Acme Corp"
+                  />
+                  <Select
+                    label="Industry"
+                    value={newLead.industry}
+                    onChange={(e) => setNewLead({ ...newLead, industry: e.target.value })}
+                    options={['Healthcare', 'Retail', 'Finance', 'Manufacturing', 'Logistics', 'Technology']}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Pipeline Configuration Parameters (Common to both modes) */}
+            <div className="pt-2 border-t border-stone-100 space-y-4">
+              <h4 className="text-[11px] font-bold text-stone-400 uppercase tracking-wider">
+                Pipeline Settings
+              </h4>
+
+              <div className="grid grid-cols-3 gap-3">
+                <Select
+                  label="Status"
+                  value={newLead.lead_status}
+                  onChange={(e) => setNewLead({ ...newLead, lead_status: e.target.value })}
+                  options={['New', 'Contacted', 'Qualified', 'Lost']}
+                />
+                <Select
+                  label="Source"
+                  value={newLead.lead_source}
+                  onChange={(e) => setNewLead({ ...newLead, lead_source: e.target.value })}
+                  options={['Website', 'Referral', 'Cold Call', 'Trade Show', 'Webinar']}
+                />
+                <Select
+                  label="Territory"
+                  value={newLead.territory}
+                  onChange={(e) => setNewLead({ ...newLead, territory: e.target.value })}
+                  options={['North America', 'Europe', 'APAC', 'LATAM']}
+                />
+              </div>
+
+              <Select
+                label="Assigned Agent"
+                value={newLead.assigned_to}
+                onChange={(e) => setNewLead({ ...newLead, assigned_to: e.target.value })}
+                options={['Sarah Chen', 'Marcus Thorne', 'James Wilson']}
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-stone-100">
+              <button 
+                type="button" 
+                onClick={() => setIsAddModalOpen(false)} 
+                className="px-4 py-2 border border-stone-200 rounded-lg font-bold text-stone-600 hover:bg-stone-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button 
+                type="submit" 
+                className="px-4 py-2 bg-stone-900 text-white rounded-lg font-bold hover:bg-stone-800 cursor-pointer"
+              >
+                Save Lead
+              </button>
+            </div>
+          </form>
+        </Modal>
 
         <ConfirmModal
           isOpen={isDeleteModalOpen}

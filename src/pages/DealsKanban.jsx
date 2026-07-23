@@ -79,7 +79,11 @@ function SortableDealCard({ deal, id }) {
       }`}
     >
       <div className="flex justify-between items-start mb-2">
-        <h3 className="font-bold text-sm text-stone-900 leading-tight pr-4">{deal.title}</h3>
+        <h3 className="font-bold text-sm text-stone-900 leading-tight pr-4">
+          <Link to={`/deals/${deal.id}`} className="hover:text-amber-600 transition-colors" onClick={(e) => e.stopPropagation()}>
+            {deal.title}
+          </Link>
+        </h3>
         <button className="text-stone-400 hover:text-stone-900 opacity-0 group-hover:opacity-100 transition-opacity p-1 -mr-2 -mt-1 rounded-md hover:bg-stone-100">
           <MoreHorizontal className="w-4 h-4" />
         </button>

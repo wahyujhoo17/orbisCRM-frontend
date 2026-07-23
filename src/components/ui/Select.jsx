@@ -1,52 +1,187 @@
-import React, { forwardRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { ChevronDown, Check, Search, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const Select = forwardRef(({
+const Select = ({
   label,
   error,
   helperText,
   options = [],
-  placeholder = 'Select an option',
+  value,
+  onChange,
+  placeholder = 'Select an option...',
+  searchPlaceholder = 'Search option...',
   size = 'md',
   className = '',
-  ...props
-}, ref) => {
-  const baseClasses = 'block w-full rounded-lg border transition-colors focus:outline-none focus:ring-2 bg-white';
+  name,
+  disabled = false,
+  isSearchable = true
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const containerRef = useRef(null);
+  const searchInputRef = useRef(null);
 
-  const sizeClasses = {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2 text-sm',
-    lg: 'px-4 py-3 text-base'
+  // Normalize options array into [{ value, label }]
+  const normalizedOptions = options.map((opt) => {
+    if (typeof opt === 'object' && opt !== null) {
+      return { value: opt.value, label: opt.label || opt.value };
+    }
+    return { value: opt, label: String(opt) };
+  });
+
+  // Find current selected option
+  const selectedOption = normalizedOptions.find((opt) => String(opt.value) === String(value));
+
+  // Filter options by search query
+  const filteredOptions = normalizedOptions.filter((opt) =>
+    opt.label.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Close when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Auto focus search input when popover opens
+  useEffect(() => {
+    if (isOpen && isSearchable && searchInputRef.current) {
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 50);
+    }
+    if (!isOpen) {
+      setSearchQuery('');
+    }
+  }, [isOpen, isSearchable]);
+
+  const handleSelect = (optionValue) => {
+    if (onChange) {
+      onChange({
+        target: {
+          name: name || '',
+          value: optionValue
+        }
+      });
+    }
+    setIsOpen(false);
+    setSearchQuery('');
   };
 
-  const stateClasses = error
-    ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-    : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-500';
+  const sizeClasses = {
+    sm: 'px-3 py-1.5 text-xs',
+    md: 'px-3.5 py-2 text-xs',
+    lg: 'px-4 py-2.5 text-sm'
+  };
 
   return (
-    <div className="w-full">
+    <div className={`w-full relative ${className}`} ref={containerRef}>
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-xs font-bold text-stone-700 mb-1">
           {label}
         </label>
       )}
-      <select
-        ref={ref}
-        className={`${baseClasses} ${sizeClasses[size]} ${stateClasses} ${className}`}
-        {...props}
+
+      {/* Trigger Button */}
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        className={`w-full flex items-center justify-between rounded-lg border bg-white font-medium transition-all cursor-pointer ${sizeClasses[size]} ${
+          error
+            ? 'border-rose-300 ring-1 ring-rose-300 text-rose-900 bg-rose-50/20'
+            : isOpen
+            ? 'border-stone-400 ring-2 ring-stone-900/10 text-stone-900 shadow-2xs'
+            : 'border-stone-200 text-stone-900 hover:border-stone-300 shadow-2xs'
+        } ${disabled ? 'opacity-60 cursor-not-allowed bg-stone-50' : ''}`}
       >
-        {placeholder && <option value="">{placeholder}</option>}
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
-      {helperText && !error && <p className="mt-1 text-sm text-gray-500">{helperText}</p>}
+        <span className={`truncate ${!selectedOption ? 'text-stone-400 font-normal' : 'font-bold text-stone-900'}`}>
+          {selectedOption ? selectedOption.label : placeholder}
+        </span>
+        <ChevronDown
+          className={`w-4 h-4 text-stone-400 shrink-0 ml-2 transition-transform duration-200 ${
+            isOpen ? 'rotate-180 text-stone-700' : ''
+          }`}
+        />
+      </button>
+
+      {/* Animated Dropdown Menu */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -4, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.98 }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
+            className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white rounded-xl border border-stone-200 shadow-2xl p-1.5 flex flex-col min-w-[200px]"
+          >
+            {/* Search Input Box (Select2 style) */}
+            {isSearchable && (
+              <div className="p-1.5 border-b border-stone-100 mb-1 sticky top-0 bg-white z-10">
+                <div className="relative flex items-center">
+                  <Search className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 pointer-events-none" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder={searchPlaceholder}
+                    className="w-full pl-8 pr-7 py-1.5 bg-stone-50 border border-stone-200 rounded-md text-xs font-medium text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-stone-400 transition-colors"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2 text-stone-400 hover:text-stone-700 cursor-pointer"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Options List */}
+            <div className="max-h-56 overflow-y-auto space-y-0.5 scrollbar-thin scrollbar-thumb-stone-200">
+              {filteredOptions.length === 0 ? (
+                <div className="px-3 py-3 text-xs text-stone-400 text-center font-medium">
+                  {searchQuery ? `No results for "${searchQuery}"` : 'No options available'}
+                </div>
+              ) : (
+                filteredOptions.map((opt) => {
+                  const isSelected = String(opt.value) === String(value);
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => handleSelect(opt.value)}
+                      className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded-lg transition-all text-left cursor-pointer ${
+                        isSelected
+                          ? 'bg-stone-900 text-white font-bold shadow-2xs'
+                          : 'text-stone-700 hover:bg-stone-100 hover:text-stone-900 font-medium'
+                      }`}
+                    >
+                      <span className="truncate pr-2">{opt.label}</span>
+                      {isSelected && <Check className="w-3.5 h-3.5 shrink-0 text-white" />}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {error && <p className="mt-1 text-xs font-semibold text-rose-600">{error}</p>}
+      {helperText && !error && <p className="mt-1 text-xs text-stone-400">{helperText}</p>}
     </div>
   );
-});
-
-Select.displayName = 'Select';
+};
 
 export default Select;
